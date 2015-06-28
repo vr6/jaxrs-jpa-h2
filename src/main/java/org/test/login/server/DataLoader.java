@@ -6,10 +6,11 @@ package org.test.login.server;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
 import javax.annotation.Resource;
@@ -48,10 +49,10 @@ public class DataLoader implements ServletContextListener {
 	 * Inserts about 100K rows (logins) of data.
 	 * Total time range is from (2005-01-01 to about 2015-06-25).
 	 * Spreads the logins randomly across the time range
-	 * 
+	 *
 	 * Attrib values are prepared randomly using the format "???"
 	 * where each "?" represents a capital alphabet (same for all three)
-	 * 
+	 *
 	 * User names are prepared using the format "u-?" where "?" represents
 	 * a number between 0 and 100. Accommodates about 100 users.
 	 */
@@ -73,14 +74,16 @@ public class DataLoader implements ServletContextListener {
 
 			// Average time elapsed between adjacent logins.
 			int avgGap = (int) ((now - loginTime) / logins);
+			
+			List<String> users = createUsers();
 
 			for (int i = 1; i <= logins; i++) {
 				st.setInt(1, i);
 				loginTime += (long) (rand.nextDouble() * avgGap * 2);
 				st.setTimestamp(2, new Timestamp(loginTime));
 
-				int userNum = rand.nextInt(100); // 100 users
-				st.setString(3, "u-" + (userNum < 10 ? "0" : "") + userNum);
+				int userNum = rand.nextInt(users.size());
+				st.setString(3, users.get(userNum));
 
 				int c1 = 'A' + rand.nextInt(26);
 				int c2 = 'A' + rand.nextInt(26);
@@ -97,6 +100,24 @@ public class DataLoader implements ServletContextListener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	private List<String> createUsers() {
+		// some good mix of vowels and consonants to make a bit pronouncible user names
+		final String[] vowels = {"a","e","i","o","u","y"};
+		final String[] conso = {"b","c","d","m","p","r","s","t","v"};
+		Random r = new Random();
+		HashSet<String> users = new HashSet<String>();
+		
+		// about a hundred user names (some duplicates get eliminated by Set)
+		for (int k=0; k<100; k++) {
+			StringBuilder user = new StringBuilder();
+			for (int i = 0; i < 7; i++) { // 7-character long user names
+				user.append( i % 2 == 0 ? conso [r.nextInt(conso.length)]
+						: vowels [r.nextInt(vowels.length)]);
+			}
+			users.add(user.toString());
+		}
+		return new ArrayList<String>(users);
 	}
 
 	/* (non-Javadoc)
