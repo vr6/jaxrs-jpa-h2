@@ -78,8 +78,11 @@ public class DataLoader implements ServletContextListener {
 			List<String> users = createUsers();
 
 			for (int i = 1; i <= logins; i++) {
-				st.setInt(1, i);
 				loginTime += (long) (rand.nextDouble() * avgGap * 2);
+				if (loginTime > now) {
+					break;   // to avoid spill-over
+				}
+				st.setInt(1, i);
 				st.setTimestamp(2, new Timestamp(loginTime));
 
 				int userNum = rand.nextInt(users.size());
