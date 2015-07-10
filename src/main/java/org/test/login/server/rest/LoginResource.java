@@ -51,10 +51,11 @@ public class LoginResource {
 		DateUtil.addDateParam(start, true, where);
 		DateUtil.addDateParam(end, false, where);
 
-		addAttrib(params.get("attribute1"), "attribute1", where);
-		addAttrib(params.get("attribute2"), "attribute2", where);
-		addAttrib(params.get("attribute3"), "attribute3", where);
-		addAttrib(params.get("attribute4"), "attribute4", where);
+		int pos = 1;
+		pos = addAttrib(params.get("attribute1"), "attribute1", where, pos);
+		pos = addAttrib(params.get("attribute2"), "attribute2", where, pos);
+		pos = addAttrib(params.get("attribute3"), "attribute3", where, pos);
+		pos = addAttrib(params.get("attribute4"), "attribute4", where, pos);
 
 		StringBuilder sql = new StringBuilder(
 				"SELECT c.user, count(c) FROM Login c");
@@ -66,9 +67,15 @@ public class LoginResource {
 			sql.delete(sql.length() - 5, sql.length() - 1);
 		}
 		sql.append(" group by c.user");
-		log.debug("SQL = " + sql.toString());
+		log.info("SQL = " + sql.toString());
 
 		Query q = em.createQuery(sql.toString());
+		pos = 1;
+		pos = setParameter (params.get("attribute1"), pos, q);
+		pos = setParameter (params.get("attribute2"), pos, q);
+		pos = setParameter (params.get("attribute3"), pos, q);
+		pos = setParameter (params.get("attribute4"), pos, q);
+		
 		@SuppressWarnings("unchecked")
 		List<Object[]> rows = q.getResultList();
 
@@ -82,20 +89,35 @@ public class LoginResource {
 	}
 
 	/**
+	 * Sets an attribute parameter to the query
+	 */
+	private int setParameter(List<String> attrib, int pos, Query q) {
+		int idx = pos;
+		if (attrib != null) {
+			for (String val : attrib) {
+				q.setParameter(idx++, val);
+			}
+		}
+		return idx;
+	}
+
+	/**
 	 * Adds an attribute parameter to SQL where clause
 	 */
-	private void addAttrib(List<String> attrib, String attribName,
-			List<String> where) {
+	private int addAttrib(List<String> attrib, String attribName,
+			List<String> where, int pos) {
+		int idx = pos;
 		if (attrib != null) {
 			if (attrib.size() < 2) {
-				where.add("c." + attribName + " = '" + attrib.get(0) + "'");
+				where.add("c." + attribName + " = ?" + idx++);
 			} else {
 				StringBuilder sb = new StringBuilder();
-				for (String val : attrib) {
-					sb.append("c." + attribName + " = '" + val + "' or ");
+				for (int i=0; i< attrib.size(); i++) {
+					sb.append("c." + attribName + " = ?" + idx++ + " or ");
 				}
 				where.add("(" + sb.substring(0, sb.length() - 4) + ")");
 			}
 		}
+		return idx;
 	}
 }
